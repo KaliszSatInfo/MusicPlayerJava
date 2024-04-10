@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class BasicGUI extends JFrame{
     private JButton stopButton;
     private JButton startButton;
-    public JPanel panel;
+    private JPanel panel;
     private JProgressBar progressBar;
     private JTextField songNameField;
     private JMenuBar menu =new JMenuBar();
@@ -16,21 +16,23 @@ public class BasicGUI extends JFrame{
     private JMenuItem loadItem = new JMenuItem("Load");
     private JFileChooser fc = new JFileChooser(".");
     private List<String> fullPlaylist = new ArrayList<>();
-
+    public static void main(String[] args) {
+        BasicGUI gui = new BasicGUI();
+        gui.setVisible(true);
+    }
     public BasicGUI(){
         Loader();
         initWindow();
         initMenu();
 
     }
-
     public void initWindow(){
+        setContentPane(panel);
         setTitle("Music Player");
         setSize(500, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
     }
-
     public void initMenu() {
         setJMenuBar(menu);
         menu.add(fileMenu);
@@ -38,7 +40,6 @@ public class BasicGUI extends JFrame{
 
         loadItem.addActionListener( e -> ChooseFile());
     }
-
     public void ChooseFile(){
         FileNameExtensionFilter filter = new FileNameExtensionFilter("MP3", "mp3");
         fc.addChoosableFileFilter(filter);
@@ -52,7 +53,7 @@ public class BasicGUI extends JFrame{
     public void Saver(){
         try(PrintWriter wr = new PrintWriter(new BufferedWriter(new FileWriter("Deskovky")))) {
             for (String path : fullPlaylist){
-                wr.print(String.valueOf(path));
+                wr.print(path);
             }
         }
         catch (FileNotFoundException e){
@@ -62,7 +63,6 @@ public class BasicGUI extends JFrame{
             System.err.println("IOE problem" + e.getLocalizedMessage());
         }
     }
-
     public void Loader(){
         try (Scanner sc = new Scanner(new BufferedReader(new FileReader("songPaths")))) {
             while (sc.hasNextLine()) {
@@ -71,10 +71,7 @@ public class BasicGUI extends JFrame{
             }
             songNameField.setText(String.valueOf(fullPlaylist.get(0)));
         } catch (FileNotFoundException e) {
-            JOptionPane.showMessageDialog(this, "Could not find save file" + e.getLocalizedMessage(), "Error", JOptionPane.INFORMATION_MESSAGE);
             System.err.println("nebyl nalezen soubor " + e.getLocalizedMessage());
-
         }
-
-
-}}
+    }
+}
