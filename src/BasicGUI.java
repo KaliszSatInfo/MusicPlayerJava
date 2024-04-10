@@ -63,6 +63,7 @@ public class BasicGUI extends JFrame{
             System.err.println("IOE problem" + e.getLocalizedMessage());
         }
     }
+
     public void Loader(){
         try (Scanner sc = new Scanner(new BufferedReader(new FileReader("songPaths")))) {
             while (sc.hasNextLine()) {
@@ -74,4 +75,8 @@ public class BasicGUI extends JFrame{
             System.err.println("nebyl nalezen soubor " + e.getLocalizedMessage());
         }
     }
+    /*public File getPath(int index){
+        //File file = File.fullPlaylist.get(index);
+        return
+    }*/
 }
