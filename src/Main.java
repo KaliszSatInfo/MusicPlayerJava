@@ -1,5 +1,7 @@
 public class Main {
     public static void main(String[] args) {
-        for (int i = 0; i < 1000; i++) System.out.println("ahoj Honzo");
+        BasicGUI gui = new BasicGUI();
+        gui.setContentPane(gui.panel);
+        gui.setVisible(true);
     }
 }
