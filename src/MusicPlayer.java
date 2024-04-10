@@ -18,7 +18,7 @@ public class MusicPlayer {
             FileInputStream fileInputStream = new FileInputStream(location);
             AdvancedPlayer player = new AdvancedPlayer(fileInputStream);
             if (toPlay) player.play();
-            else player.close(); //Doesn't work, need to figure out what the hell a java Thread is and how to run stuff in parallel
+            //else player.close(); //Doesn't work, need to figure out what the hell a java Thread is and how to run stuff in parallel
         } catch (FileNotFoundException e) {
             System.out.println("File not found: " + e.getMessage());
         } catch (JavaLayerException e) {
