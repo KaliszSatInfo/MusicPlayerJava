@@ -4,22 +4,45 @@ import javazoom.jl.player.advanced.AdvancedPlayer;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.security.spec.RSAOtherPrimeInfo;
 
 public class MusicPlayer {
-    public static void main(String[] args) {
-        String filePath = "bagpipe.mp3";
-        PlayMusic(new File(filePath));
+    private static File location;
+    private static FileInputStream fileInputStream;
+
+    static {
+        try {
+            fileInputStream = new FileInputStream(location);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static void PlayMusic(File location) {
+    private static AdvancedPlayer player;
+
+    static {
         try {
-            FileInputStream fileInputStream = new FileInputStream(location);
-            AdvancedPlayer player = new AdvancedPlayer(fileInputStream);
+            player = new AdvancedPlayer(fileInputStream);
+        } catch (JavaLayerException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void main(String[] args) {
+        BasicGUI gui = new BasicGUI();
+        gui.setVisible(true);
+
+    }
+
+    public static void PlayMusic(File file) {
+        try {
+            location = file;
             player.play();
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found: " + e.getMessage());
         } catch (JavaLayerException e) {
             System.out.println("Error playing MP3: " + e.getMessage());
         }
+    }
+    public static void shutUp(){
+        player.close();
     }
 }
