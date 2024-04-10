@@ -36,7 +36,7 @@ public class BasicGUI extends JFrame{
         setSize(500, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        playButton.addActionListener(e -> MusicPlayer.PlayMusic(fullPlaylist.get(index)));
+        playButton.addActionListener(e -> MusicPlayer.PlayMusic(fullPlaylist.get(index), true));
         //playButton.setFont(new Font("Arial", Font.PLAIN, 21));    Button size
 
         prevButton.addActionListener(e -> move(false));
@@ -95,11 +95,11 @@ public class BasicGUI extends JFrame{
     public void move(boolean right){
         if (!fullPlaylist.isEmpty()){
             if (right & index+1 < fullPlaylist.size()){
-                MusicPlayer.shutUp();
+                MusicPlayer.PlayMusic(fullPlaylist.get(index), false);
                 index++;
                 updateSongName();
             } else if (!right & index >= 1) {
-                MusicPlayer.shutUp();
+                MusicPlayer.PlayMusic(fullPlaylist.get(index), false);
                 index--;
                 updateSongName();
             }
