@@ -19,10 +19,11 @@ public class BasicGUI extends JFrame{
     private JMenuItem loadItem = new JMenuItem("Load");
     private JFileChooser fc = new JFileChooser(".");
     private static List<File> fullPlaylist = new ArrayList<>();
-    private int index = 0;
+    private static int index = 0;
+    private boolean playing;
     public static void main(String[] args) {
-        BasicGUI gui = new BasicGUI();
-        gui.setVisible(true);
+
+
     }
     public BasicGUI(){
         Loader();
@@ -36,11 +37,25 @@ public class BasicGUI extends JFrame{
         setSize(500, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        playButton.addActionListener(e -> MusicPlayer.PlayMusic(fullPlaylist.get(index), true));
+        playButton.addActionListener(e ->{play();
+
+        });
         //playButton.setFont(new Font("Arial", Font.PLAIN, 21));    Button size
 
         prevButton.addActionListener(e -> move(false));
         nextButton.addActionListener(e -> move(true));
+    }
+    public void play(){
+        MusicPlayer mp = new MusicPlayer();
+        Thread myThread = new Thread(mp);
+        if (playing){
+            playing = false;
+            throw new RuntimeException();
+        }
+        else {
+            mp.start();
+            playing = true;
+        }
     }
     public void initMenu() {
         setJMenuBar(menu);
@@ -84,6 +99,11 @@ public class BasicGUI extends JFrame{
             System.err.println("nebyl nalezen soubor " + e.getLocalizedMessage());
         }
     }
+
+    public static File getPlayListIndex() {
+        return fullPlaylist.get(index);
+    }
+
     public static File getPath(int index){
         return fullPlaylist.get(index);
     }
@@ -95,11 +115,11 @@ public class BasicGUI extends JFrame{
     public void move(boolean right){
         if (!fullPlaylist.isEmpty()){
             if (right & index+1 < fullPlaylist.size()){
-                MusicPlayer.PlayMusic(fullPlaylist.get(index), false);
+                //MusicPlayer.start();
                 index++;
                 updateSongName();
             } else if (!right & index >= 1) {
-                MusicPlayer.PlayMusic(fullPlaylist.get(index), false);
+                //MusicPlayer.start();
                 index--;
                 updateSongName();
             }
