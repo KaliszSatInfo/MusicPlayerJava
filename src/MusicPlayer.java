@@ -6,18 +6,18 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.security.spec.RSAOtherPrimeInfo;
 
-public class MusicPlayer {
-    public static void main(String[] args) {
+public class MusicPlayer extends Thread {
+    /*public static void main(String[] args) {
         BasicGUI gui = new BasicGUI();
         gui.setVisible(true);
 
-    }
+    }*/
 
-    public static void PlayMusic(File location, boolean toPlay) {
+    public void run() {
         try {
-            FileInputStream fileInputStream = new FileInputStream(location);
+            FileInputStream fileInputStream = new FileInputStream(BasicGUI.getPlayListIndex());
             AdvancedPlayer player = new AdvancedPlayer(fileInputStream);
-            if (toPlay) player.play();
+            player.play();
             //else player.close(); //Doesn't work, need to figure out what the hell a java Thread is and how to run stuff in parallel
         } catch (FileNotFoundException e) {
             System.out.println("File not found: " + e.getMessage());
