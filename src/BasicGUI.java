@@ -1,18 +1,19 @@
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class BasicGUI extends JFrame{
+    private MusicPlayer musicPlayer;
     private JPanel panel;
-    private JProgressBar progressBar;
     private JTextField songNameField;
     private JButton playButton;
     private JButton nextButton;
     private JButton prevButton;
+    private JSlider slider1;
+    private JSlider progressOfFileSlider;
     //https://yaytext.com/emoji/last-track-button/
     private JMenuBar menu =new JMenuBar();
     private JMenu fileMenu = new JMenu("File");
@@ -21,15 +22,11 @@ public class BasicGUI extends JFrame{
     private static List<File> fullPlaylist = new ArrayList<>();
     private static int index = 0;
     private boolean playing;
-    public static void main(String[] args) {
-
-
-    }
     public BasicGUI(){
+        musicPlayer = new MusicPlayer();
         Loader();
         initWindow();
         initMenu();
-
     }
     public void initWindow(){
         setContentPane(panel);
@@ -45,16 +42,19 @@ public class BasicGUI extends JFrame{
         prevButton.addActionListener(e -> move(false));
         nextButton.addActionListener(e -> move(true));
     }
-    public void play(){
-        MusicPlayer mp = new MusicPlayer();
-        Thread myThread = new Thread(mp);
-        if (playing){
+    public void play() {
+        if (musicPlayer.isPlaying()) {
+            musicPlayer.stopPlaying();
             playing = false;
-            throw new RuntimeException();
-        }
-        else {
-            mp.start();
-            playing = true;
+        } else {
+            musicPlayer.setCurrentFile(BasicGUI.getPlayListIndex());
+            if (!musicPlayer.isAlive()) {
+                musicPlayer.start();
+                playing = true;
+            } else {
+                musicPlayer.startPlaying();
+                playing = true;
+            }
         }
     }
     public void initMenu() {
