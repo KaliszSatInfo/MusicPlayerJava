@@ -1,6 +1,5 @@
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +12,7 @@ public class BasicGUI extends JFrame{
     private JButton playButton;
     private JButton nextButton;
     private JButton prevButton;
+    private JButton stopButtton;
     //https://yaytext.com/emoji/last-track-button/
     private JMenuBar menu =new JMenuBar();
     private JMenu fileMenu = new JMenu("File");
@@ -20,7 +20,9 @@ public class BasicGUI extends JFrame{
     private JFileChooser fc = new JFileChooser(".");
     private static List<File> fullPlaylist = new ArrayList<>();
     private static int index = 0;
-    private boolean playing;
+    private static boolean playing = false;
+    private String benefactor = "https://github.com/sumeghana/Java-Audio-Player.git";
+
     public static void main(String[] args) {
 
 
@@ -37,25 +39,28 @@ public class BasicGUI extends JFrame{
         setSize(500, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        playButton.addActionListener(e ->{play();
-
+        playButton.addActionListener(e ->{
+            MusicPlayer mp = new MusicPlayer();
+            Thread myThread = new Thread(mp);
+            if(!playing) play(myThread);
+            else plsStop(mp);
         });
+        //stopButtton.addActionListener(e ->plsStop());
         //playButton.setFont(new Font("Arial", Font.PLAIN, 21));    Button size
 
         prevButton.addActionListener(e -> move(false));
         nextButton.addActionListener(e -> move(true));
     }
-    public void play(){
-        MusicPlayer mp = new MusicPlayer();
-        Thread myThread = new Thread(mp);
-        if (playing){
-            playing = false;
-            throw new RuntimeException();
-        }
-        else {
-            mp.start();
-            playing = true;
-        }
+    public void play(Thread myThread){
+
+            myThread.start();
+            playing = true ;
+
+    }
+    public void plsStop(MusicPlayer mp){
+        mp.requestStop();
+        playing= false;
+
     }
     public void initMenu() {
         setJMenuBar(menu);
@@ -63,6 +68,9 @@ public class BasicGUI extends JFrame{
         fileMenu.add(loadItem);
 
         loadItem.addActionListener( e -> ChooseFile());
+    }
+    public static boolean isPlaying(){
+        return playing;
     }
     public void ChooseFile(){
         FileNameExtensionFilter filter = new FileNameExtensionFilter("MP3", "mp3");
@@ -75,7 +83,7 @@ public class BasicGUI extends JFrame{
         Saver();
     }
     public void Saver(){
-        try(PrintWriter wr = new PrintWriter(new BufferedWriter(new FileWriter("Deskovky")))) {
+        try(PrintWriter wr = new PrintWriter(new BufferedWriter(new FileWriter("songPaths")))) {
             for (File path : fullPlaylist){
                 wr.print(path);
             }
