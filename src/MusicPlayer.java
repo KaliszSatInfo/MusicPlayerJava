@@ -15,6 +15,8 @@ public class MusicPlayer implements Runnable {
     private synchronized  boolean  isStopRequested(){
        return this.stopRequsted;
     }
+    private boolean stopRequested;
+    private int originalindex;
     private void sleep(long millis){
         try {
             Thread.sleep(millis);
@@ -29,19 +31,37 @@ public class MusicPlayer implements Runnable {
     }*/
     @Override
     public void run() {
+        if (!BasicGUI.isPlaying()) {
+            playShit(getTruePath(true));
+        }
+        else playShit(getTruePath(false));
+
+    }
+    public File getTruePath(boolean play){
+        if (play){
+            BasicGUI.setPlaying(false);
+            return BasicGUI.getPlayListIndex();}
+
+        else {
+
+            BasicGUI.setPlaying(true);
+
+        return new File("doom.mp3");
+    }}
+
+    public void playShit(File path){
         System.out.println("running");
         while (!isStopRequested()){
-        try {
-            FileInputStream fileInputStream = new FileInputStream(BasicGUI.getPlayListIndex());
-            AdvancedPlayer player = new AdvancedPlayer(fileInputStream);
+            try {
+                FileInputStream fileInputStream = new FileInputStream(path);
+                AdvancedPlayer player = new AdvancedPlayer(fileInputStream);
+                player.play();
 
-           player.play();
-           //Doesn't work, need to figure out what the hell a java Thread is and how to run stuff in parallel
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found: " + e.getMessage());
-        } catch (JavaLayerException e) {
-            System.out.println("Error playing MP3: " + e.getMessage());
-        }
+            } catch (FileNotFoundException e) {
+                System.out.println("File not found: " + e.getMessage());
+            } catch (JavaLayerException e) {
+                System.out.println("Error playing MP3: " + e.getMessage());
+            }
         }
     }
 

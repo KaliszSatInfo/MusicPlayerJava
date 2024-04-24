@@ -1,3 +1,6 @@
+import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.player.advanced.AdvancedPlayer;
+
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.*;
@@ -42,8 +45,8 @@ public class BasicGUI extends JFrame{
         playButton.addActionListener(e ->{
             MusicPlayer mp = new MusicPlayer();
             Thread myThread = new Thread(mp);
-            if(!playing) play(myThread);
-            else plsStop(mp);
+            myThread.start();
+
         });
         //stopButtton.addActionListener(e ->plsStop());
         //playButton.setFont(new Font("Arial", Font.PLAIN, 21));    Button size
@@ -53,8 +56,7 @@ public class BasicGUI extends JFrame{
     }
     public void play(Thread myThread){
 
-            myThread.start();
-            playing = true ;
+            myThread.start();;
 
     }
     public void plsStop(MusicPlayer mp){
@@ -72,6 +74,9 @@ public class BasicGUI extends JFrame{
     public static boolean isPlaying(){
         return playing;
     }
+    public static void setPlaying(boolean choice){
+        playing = choice;
+    }
     public void ChooseFile(){
         FileNameExtensionFilter filter = new FileNameExtensionFilter("MP3", "mp3");
         fc.addChoosableFileFilter(filter);
@@ -85,7 +90,7 @@ public class BasicGUI extends JFrame{
     public void Saver(){
         try(PrintWriter wr = new PrintWriter(new BufferedWriter(new FileWriter("songPaths")))) {
             for (File path : fullPlaylist){
-                wr.print(path);
+                wr.println(path);
             }
         }
         catch (FileNotFoundException e){
@@ -123,14 +128,25 @@ public class BasicGUI extends JFrame{
     public void move(boolean right){
         if (!fullPlaylist.isEmpty()){
             if (right & index+1 < fullPlaylist.size()){
-                //MusicPlayer.start();
+                silence();
                 index++;
                 updateSongName();
             } else if (!right & index >= 1) {
-                //MusicPlayer.start();
+                silence();
                 index--;
                 updateSongName();
             }
         }
+    }
+    public void silence(){
+
+    }
+
+    public static int getIndex() {
+        return index;
+    }
+
+    public static void setIndex(int index) {
+        BasicGUI.index = index;
     }
 }
