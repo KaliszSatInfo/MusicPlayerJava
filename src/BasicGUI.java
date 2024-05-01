@@ -1,6 +1,3 @@
-import javazoom.jl.decoder.JavaLayerException;
-import javazoom.jl.player.advanced.AdvancedPlayer;
-
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.*;
@@ -15,7 +12,6 @@ public class BasicGUI extends JFrame{
     private JButton playButton;
     private JButton nextButton;
     private JButton prevButton;
-    private JButton stopButtton;
     //https://yaytext.com/emoji/last-track-button/
     private JMenuBar menu =new JMenuBar();
     private JMenu fileMenu = new JMenu("File");
@@ -24,7 +20,7 @@ public class BasicGUI extends JFrame{
     private static List<File> fullPlaylist = new ArrayList<>();
     private static int index = 0;
     private static boolean playing = false;
-    private String benefactor = "https://github.com/sumeghana/Java-Audio-Player.git";
+    private final MusicPlayer mp = new MusicPlayer();
 
     public static void main(String[] args) {
 
@@ -43,27 +39,21 @@ public class BasicGUI extends JFrame{
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         playButton.addActionListener(e ->{
-            MusicPlayer mp = new MusicPlayer();
-            Thread myThread = new Thread(mp);
-            myThread.start();
+            if (!MusicPlayer.isIsPlaying()) {
+                startPlaying();
 
+            } else {
+                stopPlaying();
+
+            }
         });
-        //stopButtton.addActionListener(e ->plsStop());
-        //playButton.setFont(new Font("Arial", Font.PLAIN, 21));    Button size
+
 
         prevButton.addActionListener(e -> move(false));
         nextButton.addActionListener(e -> move(true));
     }
-    public void play(Thread myThread){
 
-            myThread.start();;
 
-    }
-    public void plsStop(MusicPlayer mp){
-        mp.requestStop();
-        playing= false;
-
-    }
     public void initMenu() {
         setJMenuBar(menu);
         menu.add(fileMenu);
@@ -128,25 +118,36 @@ public class BasicGUI extends JFrame{
     public void move(boolean right){
         if (!fullPlaylist.isEmpty()){
             if (right & index+1 < fullPlaylist.size()){
-                silence();
+
                 index++;
+                stopPlaying();
                 updateSongName();
             } else if (!right & index >= 1) {
-                silence();
+
                 index--;
+                stopPlaying();
                 updateSongName();
             }
         }
     }
-    public void silence(){
 
+    public static File getCurrentSong(){
+        return fullPlaylist.get(index);
     }
-
     public static int getIndex() {
         return index;
     }
 
     public static void setIndex(int index) {
         BasicGUI.index = index;
+    }
+    public void stopPlaying(){
+        playButton.setText("►");
+        mp.pause();
+
+    }
+    public void startPlaying(){
+        playButton.setText("❚❚");
+        mp.play(fullPlaylist.get(index));
     }
 }
