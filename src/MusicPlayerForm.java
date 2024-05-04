@@ -1,5 +1,7 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
 import java.io.File;
 import java.io.IOException;
@@ -11,18 +13,20 @@ public class MusicPlayerForm extends JFrame {
     private JSlider volumeSlider;
     private JPanel panel;
     private JTable songTable;
+    private JSlider timeSlider;
     private DefaultTableModel tableModel;
     private final MusicPlayer player;
+    private boolean isAdjustingSlider;
 
     public MusicPlayerForm() {
         setContentPane(panel);
         setSize(500, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Music Player");
-
+        startProgressUpdate();
         player = new MusicPlayer();
 
-        playStopButton.addActionListener(_ -> {
+        playStopButton.addActionListener(e -> {
             if (player.isPlaying()) {
                 player.stop();
                 playStopButton.setText("Play");
@@ -32,10 +36,27 @@ public class MusicPlayerForm extends JFrame {
             }
         });
 
-        volumeSlider.addChangeListener(_ -> {
+        volumeSlider.addChangeListener(e -> {
             int volume = volumeSlider.getValue();
             player.setVolume(volume);
         });
+        timeSlider.setValue(0);
+        timeSlider.setMajorTickSpacing(MusicPlayer.getClipSize());
+        timeSlider.setMinorTickSpacing(1);
+        timeSlider.setPaintTicks(true);
+        timeSlider.setPaintLabels(true);
+
+        timeSlider.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (!isAdjustingSlider) {
+                    int value = timeSlider.getValue();
+                    player.setProgress(value);
+                }
+            }
+        });
+
+
 
         songTable.getSelectionModel().addListSelectionListener(e -> {
             int selectedRow = songTable.getSelectedRow();
@@ -58,6 +79,22 @@ public class MusicPlayerForm extends JFrame {
 
         List<String> playableFiles = findPlayableFiles(new File("."));
         updateTable(playableFiles);
+    }
+    private void startProgressUpdate() {
+        Thread progressUpdater = new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(1000); // Update every second
+                    if (!isAdjustingSlider) {
+                        long progress = player.getProgress();
+                        timeSlider.setValue((int) progress);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        progressUpdater.start();
     }
 
     private List<String> findPlayableFiles(File folder) {
@@ -100,14 +137,18 @@ public class MusicPlayerForm extends JFrame {
 
 class MusicPlayer {
     private Clip clip;
-    private boolean playing = false;
+    private static boolean playing = false;
     private FloatControl volumeControl;
+    private static long clipSize;
+    private long pausedTime;
 
     public void load(File audioFile) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
         clip = AudioSystem.getClip();
         clip.open(audioStream);
         volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+        clipSize = (long) (audioStream.getFrameLength() / audioStream.getFormat().getFrameRate());
+
     }
 
     public void play() {
@@ -120,11 +161,12 @@ class MusicPlayer {
     public void stop() {
         if (clip != null) {
             clip.stop();
+            pausedTime = clip.getMicrosecondPosition();
             playing = false;
         }
     }
 
-    public boolean isPlaying() {
+    public static boolean isPlaying() {
         return playing;
     }
 
@@ -132,5 +174,22 @@ class MusicPlayer {
         float gain = (float) (Math.log10(volume / 100.0) * 20) - 20f;
         volumeControl.setValue(gain);
         //fix this so it doesn't tear of your ears when you start playing
+    }
+    public long getProgress() {
+        if (clip != null && clip.isRunning()) {
+            return clip.getMicrosecondPosition() / 1_000_000;
+        } else {
+            return pausedTime / 1_000_000;
+        }
+    }
+
+    public static int getClipSize(){
+        return (int) clipSize;
+    }
+    public void setProgress(long timeStamp) {
+        if (clip != null) {
+            clip.setMicrosecondPosition(timeStamp); // Convert seconds to microseconds
+        }
+
     }
 }
