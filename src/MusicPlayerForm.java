@@ -1,7 +1,5 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableModel;
 import java.io.File;
 import java.io.IOException;
@@ -26,8 +24,8 @@ public class MusicPlayerForm extends JFrame {
         startProgressUpdate();
         player = new MusicPlayer();
 
-        playStopButton.addActionListener(e -> {
-            if (player.isPlaying()) {
+        playStopButton.addActionListener(_ -> {
+            if (MusicPlayer.isPlaying()) {
                 player.stop();
                 playStopButton.setText("Play");
             } else {
@@ -36,7 +34,7 @@ public class MusicPlayerForm extends JFrame {
             }
         });
 
-        volumeSlider.addChangeListener(e -> {
+        volumeSlider.addChangeListener(_ -> {
             int volume = volumeSlider.getValue();
             player.setVolume(volume);
         });
@@ -46,30 +44,27 @@ public class MusicPlayerForm extends JFrame {
         timeSlider.setPaintTicks(true);
         timeSlider.setPaintLabels(true);
 
-        timeSlider.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                if (!isAdjustingSlider) {
-                    int value = timeSlider.getValue();
-                    player.setProgress(value);
-                }
+        timeSlider.addChangeListener(_ -> {
+            if (!isAdjustingSlider) {
+                int value = timeSlider.getValue();
+                player.setProgress(value);
             }
         });
 
-
-
-        songTable.getSelectionModel().addListSelectionListener(e -> {
+        songTable.getSelectionModel().addListSelectionListener(_ -> {
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
                 String filename = (String) tableModel.getValueAt(selectedRow, 0);
                 File selectedFile = new File(".", filename);
                 try {
                     player.stop();
-                    player.load(selectedFile);
+                    int volume = volumeSlider.getValue();
+                    player.load(selectedFile, volume);
                     player.play();
                     playStopButton.setText("Stop");
+                    timeSlider.setMaximum(MusicPlayer.getClipSize());
                 } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
-                    ex.getLocalizedMessage();
+                    ex.printStackTrace();
                 }
             }
         });
@@ -80,17 +75,20 @@ public class MusicPlayerForm extends JFrame {
         List<String> playableFiles = findPlayableFiles(new File("."));
         updateTable(playableFiles);
     }
+
     private void startProgressUpdate() {
         Thread progressUpdater = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(1000); // Update every second
-                    if (!isAdjustingSlider) {
+                    Thread.sleep(1000);
+                    if (!isAdjustingSlider && MusicPlayer.isPlaying()) {
                         long progress = player.getProgress();
-                        timeSlider.setValue((int) progress);
+                        if (timeSlider.getValue() != progress) {
+                            timeSlider.setValue((int) progress);
+                        }
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
         });
@@ -142,13 +140,13 @@ class MusicPlayer {
     private static long clipSize;
     private long pausedTime;
 
-    public void load(File audioFile) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+    public void load(File audioFile, int volume) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
         clip = AudioSystem.getClip();
         clip.open(audioStream);
         volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+        setVolume(volume);
         clipSize = (long) (audioStream.getFrameLength() / audioStream.getFormat().getFrameRate());
-
     }
 
     public void play() {
@@ -171,10 +169,10 @@ class MusicPlayer {
     }
 
     public void setVolume(int volume) {
-        float gain = (float) (Math.log10(volume / 100.0) * 20) - 20f;
+        float gain = (float) (20 * Math.log10(volume / 100.0) - 20f);
         volumeControl.setValue(gain);
-        //fix this so it doesn't tear of your ears when you start playing
     }
+
     public long getProgress() {
         if (clip != null && clip.isRunning()) {
             return clip.getMicrosecondPosition() / 1_000_000;
@@ -183,13 +181,11 @@ class MusicPlayer {
         }
     }
 
-    public static int getClipSize(){
+    public static int getClipSize() {
         return (int) clipSize;
     }
-    public void setProgress(long timeStamp) {
-        if (clip != null) {
-            clip.setMicrosecondPosition(timeStamp); // Convert seconds to microseconds
-        }
+
+    public void setProgress(long targetTime) {
 
     }
 }
