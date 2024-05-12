@@ -1,13 +1,16 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public class MusicPlayerForm extends JFrame {
-    private JButton playStopButton;
+    private /*static*/ JButton playStopButton;
     private JSlider volumeSlider;
     private JPanel panel;
     private JTable songTable;
@@ -24,7 +27,8 @@ public class MusicPlayerForm extends JFrame {
         startProgressUpdate();
         player = new MusicPlayer();
 
-        playStopButton.addActionListener(_ -> {
+
+        playStopButton.addActionListener(e -> {
             if (MusicPlayer.isPlaying()) {
                 player.stop();
                 playStopButton.setText("Play");
@@ -34,7 +38,7 @@ public class MusicPlayerForm extends JFrame {
             }
         });
 
-        volumeSlider.addChangeListener(_ -> {
+        volumeSlider.addChangeListener(e -> {
             int volume = volumeSlider.getValue();
             player.setVolume(volume);
         });
@@ -44,14 +48,13 @@ public class MusicPlayerForm extends JFrame {
         timeSlider.setPaintTicks(true);
         timeSlider.setPaintLabels(true);
 
-        timeSlider.addChangeListener(_ -> {
-            if (!isAdjustingSlider) {
-                int value = timeSlider.getValue();
-                player.setProgress(value);
+        timeSlider.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                player.setProgress(timeSlider.getValue()*1000000L);
             }
         });
-
-        songTable.getSelectionModel().addListSelectionListener(_ -> {
+        songTable.getSelectionModel().addListSelectionListener(e -> {
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
                 String filename = (String) tableModel.getValueAt(selectedRow, 0);
@@ -63,6 +66,10 @@ public class MusicPlayerForm extends JFrame {
                     player.play();
                     playStopButton.setText("Stop");
                     timeSlider.setMaximum(MusicPlayer.getClipSize());
+                    timeSlider.setPaintTicks(false);
+                    timeSlider.setPaintLabels(false);
+                    timeSlider.setMajorTickSpacing(0);
+                    timeSlider.setMinorTickSpacing(0);
                 } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
                     ex.printStackTrace();
                 }
@@ -107,6 +114,9 @@ public class MusicPlayerForm extends JFrame {
         }
         return playableFiles;
     }
+    /*public static void setPlayStopButton(String bool) {
+        playStopButton.setText(bool);
+    }*/
 
     private boolean isPlayable(File file) {
         String fileName = file.getName();
@@ -141,9 +151,16 @@ class MusicPlayer {
     private long pausedTime;
 
     public void load(File audioFile, int volume) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+        //final CountDownLatch playingFinished = new CountDownLatch(1);
         AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
         clip = AudioSystem.getClip();
         clip.open(audioStream);
+        clip.addLineListener(event -> {
+            if (event.getType() == LineEvent.Type.STOP) {
+                //MusicPlayerForm.setPlayStopButton("play");   when the song ends it doesn't register, doesn't change the text
+                playing = false;
+            }
+        });
         volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
         setVolume(volume);
         clipSize = (long) (audioStream.getFrameLength() / audioStream.getFormat().getFrameRate());
@@ -163,6 +180,7 @@ class MusicPlayer {
             playing = false;
         }
     }
+
 
     public static boolean isPlaying() {
         return playing;
@@ -186,6 +204,8 @@ class MusicPlayer {
     }
 
     public void setProgress(long targetTime) {
-
+        if (clip != null && clip.isRunning()) {
+            clip.setMicrosecondPosition(targetTime);
+        }
     }
 }
