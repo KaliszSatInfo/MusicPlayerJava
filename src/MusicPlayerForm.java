@@ -1,11 +1,13 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -15,16 +17,27 @@ public class MusicPlayerForm extends JFrame {
     private JPanel panel;
     private JTable songTable;
     private JSlider timeSlider;
+    private JMenuBar mBar = new JMenuBar();
+    private JMenuItem menu0 = new JMenuItem("Add folder");
+    //private JMenuItem mItem = new JMenuItem("");
     private DefaultTableModel tableModel;
     private final MusicPlayer player;
     private boolean isAdjustingSlider;
+    private JFileChooser fc = new JFileChooser(".");
+    private List<String> playableFiles = new ArrayList<>();
 
     public MusicPlayerForm() {
         setContentPane(panel);
         setSize(500, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Music Player");
+        setJMenuBar(mBar);
+        mBar.add(menu0);
         startProgressUpdate();
+        menu0.addActionListener(e -> {
+            addFolder();
+        });
+
         player = new MusicPlayer();
 
 
@@ -82,7 +95,29 @@ public class MusicPlayerForm extends JFrame {
         List<String> playableFiles = findPlayableFiles(new File("."));
         updateTable(playableFiles);
     }
+    public void addFolder(){
+        String userInput = JOptionPane.showInputDialog(this, "Folder path:");
+        if (userInput != null && !userInput.isEmpty()) {
+            if (new File(userInput).isDirectory())
+                processFolder(userInput);
 
+        }
+        else JOptionPane.showMessageDialog(this, "Not a valid directory");
+
+    }
+    public void processFolder(String path){
+        File directory = new File(path);
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+            if (isPlayable(file)){
+                playableFiles.add(String.valueOf(file));
+
+            }
+            }
+            updateTable(playableFiles);
+        }
+    }
     private void startProgressUpdate() {
         Thread progressUpdater = new Thread(() -> {
             while (true) {
@@ -101,9 +136,13 @@ public class MusicPlayerForm extends JFrame {
         });
         progressUpdater.start();
     }
+    public String StripPrefix(String path){
+        File name = new File(path);
+        return name.getName();
+    }
 
     private List<String> findPlayableFiles(File folder) {
-        List<String> playableFiles = new ArrayList<>();
+
         File[] files = folder.listFiles();
         if (files != null) {
             for (File file : files) {
@@ -120,7 +159,7 @@ public class MusicPlayerForm extends JFrame {
 
     private boolean isPlayable(File file) {
         String fileName = file.getName();
-        String[] supportedExtensions = {"mp3", "wav", "ogg"};
+        String[] supportedExtensions = { "wav", "ogg", };
 
         for (String extension : supportedExtensions) {
             if (fileName.endsWith("." + extension)) {
