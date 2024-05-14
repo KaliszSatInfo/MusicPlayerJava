@@ -4,11 +4,12 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 
 public class MusicPlayerForm extends JFrame {
@@ -23,8 +24,10 @@ public class MusicPlayerForm extends JFrame {
     private DefaultTableModel tableModel;
     private final MusicPlayer player;
     private boolean isAdjustingSlider;
+
     private JFileChooser fc = new JFileChooser(".");
-    private List<String> playableFiles = new ArrayList<>();
+    //private List<String> playableFiles = new ArrayList<>();
+    private List<mySong> avalSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
         setContentPane(panel);
@@ -34,6 +37,7 @@ public class MusicPlayerForm extends JFrame {
         setJMenuBar(mBar);
         mBar.add(menu0);
         startProgressUpdate();
+        readMemory();
         menu0.addActionListener(e -> {
             addFolder();
         });
@@ -44,10 +48,10 @@ public class MusicPlayerForm extends JFrame {
         playStopButton.addActionListener(e -> {
             if (MusicPlayer.isPlaying()) {
                 player.stop();
-                playStopButton.setText("Play");
+                playStopButton.setText("►");
             } else {
                 player.play();
-                playStopButton.setText("Stop");
+                playStopButton.setText("❚❚");
             }
         });
 
@@ -70,8 +74,9 @@ public class MusicPlayerForm extends JFrame {
         songTable.getSelectionModel().addListSelectionListener(e -> {
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
-                String filename = (String) tableModel.getValueAt(selectedRow, 0);
-                File selectedFile = new File(".", filename);
+                String filename = getFilePathFromSong((String) tableModel.getValueAt(selectedRow, 0), avalSongs);
+                System.out.println((String) tableModel.getValueAt(selectedRow, 0));
+                File selectedFile = new File( filename);
                 try {
                     player.stop();
                     int volume = volumeSlider.getValue();
@@ -92,8 +97,32 @@ public class MusicPlayerForm extends JFrame {
         tableModel = new DefaultTableModel(new String[]{"File Name"}, 0);
         songTable.setModel(tableModel);
 
-        List<String> playableFiles = findPlayableFiles(new File("."));
-        updateTable(playableFiles);
+        readMemory();
+        updateTable(avalSongs);
+    }
+    public String getFilePathFromSong(String name, List<mySong> list){
+        String path = null;
+        for (mySong song: list){
+            if (name.equals(song.getName())){
+                path = song.getPath();
+                break;
+            }
+        }
+        return path;
+    }
+    public void readMemory(){
+        try (Scanner sc = new Scanner(new BufferedReader(new FileReader("songinfo")));){
+            while(sc.hasNextLine()){
+                String line = sc.nextLine();
+                String[] bloky = line.split(";");
+                String path = bloky[0];
+                String name = bloky[1];
+                int playlistID = Integer.parseInt(bloky[2]);
+                avalSongs.add(new mySong(path, name, playlistID));
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
     public void addFolder(){
         String userInput = JOptionPane.showInputDialog(this, "Folder path:");
@@ -111,11 +140,12 @@ public class MusicPlayerForm extends JFrame {
         if (files != null) {
             for (File file : files) {
             if (isPlayable(file)){
-                playableFiles.add(String.valueOf(file));
+                avalSongs.add(new mySong(String.valueOf(file), StripPrefix(String.valueOf(file)), 1));
+                //playableFiles.add(String.valueOf(file));
 
             }
             }
-            updateTable(playableFiles);
+            updateTable(avalSongs);
         }
     }
     private void startProgressUpdate() {
@@ -136,12 +166,13 @@ public class MusicPlayerForm extends JFrame {
         });
         progressUpdater.start();
     }
+
     public String StripPrefix(String path){
         File name = new File(path);
         return name.getName();
     }
 
-    private List<String> findPlayableFiles(File folder) {
+    /*private List<String> findPlayableFiles(File folder) {
 
         File[] files = folder.listFiles();
         if (files != null) {
@@ -169,10 +200,10 @@ public class MusicPlayerForm extends JFrame {
         return false;
     }
 
-    private void updateTable(List<String> data) {
+    private void updateTable(List<mySong> data) {
         tableModel.setRowCount(0);
-        for (String datum : data) {
-            tableModel.addRow(new Object[]{datum});
+        for (mySong datum : data) {
+            tableModel.addRow(new Object[]{datum.getPath()});
         }
     }
 
