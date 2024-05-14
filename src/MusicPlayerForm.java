@@ -23,8 +23,8 @@ public class MusicPlayerForm extends JFrame {
     private JMenuItem menu0 = new JMenuItem("Add folder");
     //private JMenuItem mItem = new JMenuItem("");
     private DefaultTableModel tableModel;
-    private final MusicPlayer player = new MusicPlayer();
-    private JCheckBox loop;
+    private MusicPlayer player = new MusicPlayer();
+    private JCheckBox loop = new JCheckBox();
     private boolean isAdjustingSlider;
 
     private JFileChooser fc = new JFileChooser(".");
@@ -137,6 +137,8 @@ public class MusicPlayerForm extends JFrame {
 
         return path;
     }
+    /*just for you pookie
+    * */
 
     public void writeToMemory(){
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("songinfo")));)
@@ -207,7 +209,7 @@ public class MusicPlayerForm extends JFrame {
         progressUpdater.start();
     }
 
-    public String StripPrefix(String path){
+    public String StripPrefix(String path){ //:o
         File name = new File(path);
         return name.getName();
     }
@@ -266,7 +268,7 @@ class MusicPlayer {
     private long pausedTime;
     private boolean toLoop;
 
-    public boolean isToLoop() {
+    public boolean isToLoop() {//yes it is needet, (it isnt)
         return toLoop;
     }
 
