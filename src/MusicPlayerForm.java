@@ -1,28 +1,30 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.*;
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.CountDownLatch;
 
 public class MusicPlayerForm extends JFrame {
-    private /*static*/ JButton playStopButton;
+    private  JButton playStopButton;
     private JSlider volumeSlider;
     private JPanel panel;
     private JTable songTable;
     private JSlider timeSlider;
+    private JLabel currTime;
+    private JLabel songLenght;
+    private JButton optionBar;
     private JMenuBar mBar = new JMenuBar();
     private JMenuItem menu0 = new JMenuItem("Add folder");
     //private JMenuItem mItem = new JMenuItem("");
     private DefaultTableModel tableModel;
-    private final MusicPlayer player;
+    private final MusicPlayer player = new MusicPlayer();
+    private JCheckBox loop;
     private boolean isAdjustingSlider;
 
     private JFileChooser fc = new JFileChooser(".");
@@ -37,12 +39,22 @@ public class MusicPlayerForm extends JFrame {
         setJMenuBar(mBar);
         mBar.add(menu0);
         startProgressUpdate();
-        readMemory();
+        optionBar.addActionListener(e -> {
+            Object[] fields = {
+                    "⟳: ", loop,
+            };
+
+            int result = JOptionPane.showConfirmDialog(this, fields, "Options", JOptionPane.OK_CANCEL_OPTION);
+            if (result == JOptionPane.OK_OPTION ){
+                player.setToLoop(loop.isSelected());
+            }
+        });
+
         menu0.addActionListener(e -> {
             addFolder();
         });
 
-        player = new MusicPlayer();
+
 
 
         playStopButton.addActionListener(e -> {
@@ -54,16 +66,25 @@ public class MusicPlayerForm extends JFrame {
                 playStopButton.setText("❚❚");
             }
         });
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                System.out.println("window closed");
+                writeToMemory();
+            }
+        });
+
+
 
         volumeSlider.addChangeListener(e -> {
             int volume = volumeSlider.getValue();
             player.setVolume(volume);
         });
-        timeSlider.setValue(0);
+        /*timeSlider.setValue(0);
         timeSlider.setMajorTickSpacing(MusicPlayer.getClipSize());
         timeSlider.setMinorTickSpacing(1);
         timeSlider.setPaintTicks(true);
-        timeSlider.setPaintLabels(true);
+        timeSlider.setPaintLabels(true);*/
 
         timeSlider.addMouseListener(new MouseAdapter() {
             @Override
@@ -75,19 +96,23 @@ public class MusicPlayerForm extends JFrame {
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
                 String filename = getFilePathFromSong((String) tableModel.getValueAt(selectedRow, 0), avalSongs);
-                System.out.println((String) tableModel.getValueAt(selectedRow, 0));
+                //System.out.println((String) tableModel.getValueAt(selectedRow, 0));
+                //System.out.println( (String) tableModel.getValueAt(selectedRow, 0) );
                 File selectedFile = new File( filename);
+                System.out.println(filename);
                 try {
                     player.stop();
                     int volume = volumeSlider.getValue();
                     player.load(selectedFile, volume);
                     player.play();
+                    songLenght.setText(secToMin(MusicPlayer.getClipSize()));
                     playStopButton.setText("Stop");
                     timeSlider.setMaximum(MusicPlayer.getClipSize());
                     timeSlider.setPaintTicks(false);
                     timeSlider.setPaintLabels(false);
                     timeSlider.setMajorTickSpacing(0);
                     timeSlider.setMinorTickSpacing(0);
+                    timeSlider.setSnapToTicks(false);
                 } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
                     ex.printStackTrace();
                 }
@@ -98,17 +123,31 @@ public class MusicPlayerForm extends JFrame {
         songTable.setModel(tableModel);
 
         readMemory();
+
         updateTable(avalSongs);
     }
     public String getFilePathFromSong(String name, List<mySong> list){
-        String path = null;
+        String path="";
         for (mySong song: list){
             if (name.equals(song.getName())){
                 path = song.getPath();
                 break;
             }
         }
+
         return path;
+    }
+
+    public void writeToMemory(){
+        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("songinfo")));)
+        {
+            writer.print("");
+            for (mySong songs: avalSongs){
+                writer.println(songs.getPath() + ";" + songs.getName() + ";" + songs.getPlaylistID());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
     public void readMemory(){
         try (Scanner sc = new Scanner(new BufferedReader(new FileReader("songinfo")));){
@@ -155,6 +194,7 @@ public class MusicPlayerForm extends JFrame {
                     Thread.sleep(1000);
                     if (!isAdjustingSlider && MusicPlayer.isPlaying()) {
                         long progress = player.getProgress();
+                        currTime.setText(secToMin(player.getProgress()));
                         if (timeSlider.getValue() != progress) {
                             timeSlider.setValue((int) progress);
                         }
@@ -203,8 +243,13 @@ public class MusicPlayerForm extends JFrame {
     private void updateTable(List<mySong> data) {
         tableModel.setRowCount(0);
         for (mySong datum : data) {
-            tableModel.addRow(new Object[]{datum.getPath()});
+            tableModel.addRow(new Object[]{datum.getName()});
         }
+    }
+    public static String secToMin(long totalSeconds) {
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return String.format("%d:%02d", minutes, seconds);
     }
 
     public static void main(String[] args) {
@@ -219,6 +264,15 @@ class MusicPlayer {
     private FloatControl volumeControl;
     private static long clipSize;
     private long pausedTime;
+    private boolean toLoop;
+
+    public boolean isToLoop() {
+        return toLoop;
+    }
+
+    public void setToLoop(boolean toLoop) {
+        this.toLoop = toLoop;
+    }
 
     public void load(File audioFile, int volume) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         //final CountDownLatch playingFinished = new CountDownLatch(1);
