@@ -1,9 +1,9 @@
-public class mySong {
+public class MySong {
     private String path;
     private String name;
     private int playlistID;
 
-    public mySong(String path, String name, int playlistID) {
+    public MySong(String path, String name, int playlistID) {
         this.path = path;
         this.name = name;
         this.playlistID = playlistID;

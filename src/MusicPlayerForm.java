@@ -1,6 +1,7 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -19,6 +20,10 @@ public class MusicPlayerForm extends JFrame {
     private JLabel currTime;
     private JLabel songLenght;
     private JButton optionBar;
+    private JButton rightButton;
+    private JButton leftButton;
+    private JLabel songTitle;
+    private JButton loopButton;
     private JMenuBar mBar = new JMenuBar();
     private JMenuItem menu0 = new JMenuItem("Add folder");
     //private JMenuItem mItem = new JMenuItem("");
@@ -27,13 +32,14 @@ public class MusicPlayerForm extends JFrame {
     private JCheckBox loop = new JCheckBox();
     private boolean isAdjustingSlider;
 
+
     private JFileChooser fc = new JFileChooser(".");
     //private List<String> playableFiles = new ArrayList<>();
-    private List<mySong> avalSongs = new ArrayList<>();
+    private List<MySong> avalSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
         setContentPane(panel);
-        setSize(500, 500);
+        setSize(800, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Music Player");
         setJMenuBar(mBar);
@@ -53,18 +59,22 @@ public class MusicPlayerForm extends JFrame {
         menu0.addActionListener(e -> {
             addFolder();
         });
+        loopButton.setForeground(Color.LIGHT_GRAY);
+        loopButton.addActionListener(e -> {
+           if (!player.isToLoop()){
+               player.setToLoop(true);
+               loopButton.setForeground(Color.BLACK);
+           } else {
+               player.setToLoop(false);
+               loopButton.setForeground(Color.LIGHT_GRAY);
+           }
+        });
 
 
 
 
         playStopButton.addActionListener(e -> {
-            if (MusicPlayer.isPlaying()) {
-                player.stop();
-                playStopButton.setText("►");
-            } else {
-                player.play();
-                playStopButton.setText("❚❚");
-            }
+            updateIcons();
         });
         addWindowListener(new WindowAdapter() {
             @Override
@@ -78,7 +88,7 @@ public class MusicPlayerForm extends JFrame {
 
         volumeSlider.addChangeListener(e -> {
             int volume = volumeSlider.getValue();
-            player.setVolume(volume);
+            if (MusicPlayer.isPlaying()) player.setVolume(volume);
         });
         /*timeSlider.setValue(0);
         timeSlider.setMajorTickSpacing(MusicPlayer.getClipSize());
@@ -126,9 +136,18 @@ public class MusicPlayerForm extends JFrame {
 
         updateTable(avalSongs);
     }
-    public String getFilePathFromSong(String name, List<mySong> list){
+    public void updateIcons(){
+        if (MusicPlayer.isPlaying()) {
+            player.stop();
+            playStopButton.setText("►");
+        } else {
+            player.play();
+            playStopButton.setText("❚❚");
+        }
+    }
+    public String getFilePathFromSong(String name, List<MySong> list){
         String path="";
-        for (mySong song: list){
+        for (MySong song: list){
             if (name.equals(song.getName())){
                 path = song.getPath();
                 break;
@@ -144,7 +163,7 @@ public class MusicPlayerForm extends JFrame {
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("songinfo")));)
         {
             writer.print("");
-            for (mySong songs: avalSongs){
+            for (MySong songs: avalSongs){
                 writer.println(songs.getPath() + ";" + songs.getName() + ";" + songs.getPlaylistID());
             }
         } catch (IOException e) {
@@ -159,7 +178,7 @@ public class MusicPlayerForm extends JFrame {
                 String path = bloky[0];
                 String name = bloky[1];
                 int playlistID = Integer.parseInt(bloky[2]);
-                avalSongs.add(new mySong(path, name, playlistID));
+                avalSongs.add(new MySong(path, name, playlistID));
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -181,7 +200,7 @@ public class MusicPlayerForm extends JFrame {
         if (files != null) {
             for (File file : files) {
             if (isPlayable(file)){
-                avalSongs.add(new mySong(String.valueOf(file), StripPrefix(String.valueOf(file)), 1));
+                avalSongs.add(new MySong(String.valueOf(file), stripPrefix(String.valueOf(file)), 1));
                 //playableFiles.add(String.valueOf(file));
 
             }
@@ -209,7 +228,7 @@ public class MusicPlayerForm extends JFrame {
         progressUpdater.start();
     }
 
-    public String StripPrefix(String path){ //:o
+    public String stripPrefix(String path){ //:o
         File name = new File(path);
         return name.getName();
     }
@@ -242,9 +261,9 @@ public class MusicPlayerForm extends JFrame {
         return false;
     }
 
-    private void updateTable(List<mySong> data) {
+    private void updateTable(List<MySong> data) {
         tableModel.setRowCount(0);
-        for (mySong datum : data) {
+        for (MySong datum : data) {
             tableModel.addRow(new Object[]{datum.getName()});
         }
     }
@@ -267,6 +286,7 @@ class MusicPlayer {
     private static long clipSize;
     private long pausedTime;
     private boolean toLoop;
+    //private CountDownLatch syncLatch = new CountDownLatch(1);
 
     public boolean isToLoop() {//yes it is needet, (it isnt)
         return toLoop;
@@ -283,13 +303,21 @@ class MusicPlayer {
         clip.open(audioStream);
         clip.addLineListener(event -> {
             if (event.getType() == LineEvent.Type.STOP) {
-                //MusicPlayerForm.setPlayStopButton("play");   when the song ends it doesn't register, doesn't change the text
-                playing = false;
+                if (toLoop) {
+                    clip.setMicrosecondPosition(1);
+                }
+                else {
+                    playing = false;
+                   //MusicPlayerForm.updateIcons();
+                }
+
+
             }
         });
         volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
         setVolume(volume);
         clipSize = (long) (audioStream.getFrameLength() / audioStream.getFormat().getFrameRate());
+
     }
 
     public void play() {
@@ -301,8 +329,9 @@ class MusicPlayer {
 
     public void stop() {
         if (clip != null) {
-            clip.stop();
             pausedTime = clip.getMicrosecondPosition();
+            clip.stop();
+
             playing = false;
         }
     }
