@@ -8,7 +8,7 @@ SDK: `openjdk-22 java version "22.0.1"` <br />
 Language level: `X - Experimental features` <br />
 Vývojářské prostředí: `IntelliJ IDEA 2023.3.6. (Community Edition); Build #IC-233.15026.9` <br />
 
-## Jak aplikace zprovoznit
+## Jak aplikaci zprovoznit
 
 1. Naklonujte projekt do IntelliJ
 2. Spusťte metodu `main` ve třídě `MusicPlayerForm`
