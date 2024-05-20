@@ -44,7 +44,7 @@ public class MusicPlayerForm extends JFrame {
         setJMenuBar(mBar);
         mBar.add(menu0);
         startProgressUpdate();
-        MusicPlayer.getMyMusicPlayerForm(this);
+        //MusicPlayer.getMyMusicPlayerForm(this);
         optionBar.addActionListener(e -> {
             Object[] fields = {
                     "⟳: ", loop,
@@ -117,7 +117,7 @@ public class MusicPlayerForm extends JFrame {
                     player.load(selectedFile, volume);
                     player.play();
                     songLenght.setText(secToMin(MusicPlayer.getClipSize()));
-                    playStopButton.setText("Stop");
+                    playStopButton.setText("❚❚");
                     timeSlider.setMaximum(MusicPlayer.getClipSize());
                     timeSlider.setPaintTicks(false);
                     timeSlider.setPaintLabels(false);
@@ -137,6 +137,7 @@ public class MusicPlayerForm extends JFrame {
 
         updateTable(avalSongs);
     }
+
     public void updateIcons(){
         if (MusicPlayer.isPlaying()) {
             player.stop();
@@ -261,6 +262,7 @@ public class MusicPlayerForm extends JFrame {
         return false;
     }
 
+
     private void updateTable(List<MySong> data) {
         tableModel.setRowCount(0);
         for (MySong datum : data) {
@@ -288,6 +290,7 @@ class MusicPlayer {
     private boolean toLoop;
     private CountDownLatch syncLatch = new CountDownLatch(1);
     private static MusicPlayerForm player;
+    // !!!!!!!!!!!!!!!!!!!!!!   DANGER DANGER DANGER probably should delete DANGER DANGER DANGER !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     public boolean isToLoop() {
         return toLoop;
@@ -303,14 +306,17 @@ class MusicPlayer {
         clip = AudioSystem.getClip();
         clip.open(audioStream);
         clip.addLineListener(event -> {
+            if (!clip.isRunning()){
             if (event.getType() == LineEvent.Type.STOP) {
                 if (toLoop) {
-                    clip.setMicrosecondPosition(1);
+                    clip.setMicrosecondPosition(0);
+                    clip.start();
                 }
                 else {
                     playing = false;
+                    clip.setMicrosecondPosition(0);
                    player.updateIcons();
-                }
+                }}
 
 
             }
@@ -364,7 +370,7 @@ class MusicPlayer {
             clip.setMicrosecondPosition(targetTime);
         }
     }
-    public static void getMyMusicPlayerForm(MusicPlayerForm form){
+    /*public static void getMyMusicPlayerForm(MusicPlayerForm form){
         player = form;
-    }
+    }*/
 }
