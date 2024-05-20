@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
 
 public class MusicPlayerForm extends JFrame {
     private  JButton playStopButton;
@@ -33,8 +34,6 @@ public class MusicPlayerForm extends JFrame {
     private boolean isAdjustingSlider;
 
 
-    private JFileChooser fc = new JFileChooser(".");
-    //private List<String> playableFiles = new ArrayList<>();
     private List<MySong> avalSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
@@ -45,6 +44,7 @@ public class MusicPlayerForm extends JFrame {
         setJMenuBar(mBar);
         mBar.add(menu0);
         startProgressUpdate();
+        MusicPlayer.getMyMusicPlayerForm(this);
         optionBar.addActionListener(e -> {
             Object[] fields = {
                     "⟳: ", loop,
@@ -57,7 +57,8 @@ public class MusicPlayerForm extends JFrame {
         });
 
         menu0.addActionListener(e -> {
-            addFolder();
+            //addFolder();
+            fileschooser();
         });
         loopButton.setForeground(Color.LIGHT_GRAY);
         loopButton.addActionListener(e -> {
@@ -156,8 +157,7 @@ public class MusicPlayerForm extends JFrame {
 
         return path;
     }
-    /*just for you pookie
-    * */
+
 
     public void writeToMemory(){
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("songinfo")));)
@@ -184,16 +184,8 @@ public class MusicPlayerForm extends JFrame {
             throw new RuntimeException(e);
         }
     }
-    public void addFolder(){
-        String userInput = JOptionPane.showInputDialog(this, "Folder path:");
-        if (userInput != null && !userInput.isEmpty()) {
-            if (new File(userInput).isDirectory())
-                processFolder(userInput);
 
-        }
-        else JOptionPane.showMessageDialog(this, "Not a valid directory");
 
-    }
     public void processFolder(String path){
         File directory = new File(path);
         File[] files = directory.listFiles();
@@ -207,6 +199,14 @@ public class MusicPlayerForm extends JFrame {
             }
             updateTable(avalSongs);
         }
+    }
+    public void fileschooser(){
+        JFileChooser fc = new JFileChooser();
+        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (fc.showOpenDialog(this)==JFileChooser.APPROVE_OPTION){
+            processFolder(fc.getSelectedFile().getAbsolutePath());
+        }
+        JOptionPane.showMessageDialog(this, "Please select a valid directory");
     }
     private void startProgressUpdate() {
         Thread progressUpdater = new Thread(() -> {
@@ -286,9 +286,10 @@ class MusicPlayer {
     private static long clipSize;
     private long pausedTime;
     private boolean toLoop;
-    //private CountDownLatch syncLatch = new CountDownLatch(1);
+    private CountDownLatch syncLatch = new CountDownLatch(1);
+    private static MusicPlayerForm player;
 
-    public boolean isToLoop() {//yes it is needet, (it isnt)
+    public boolean isToLoop() {
         return toLoop;
     }
 
@@ -297,7 +298,7 @@ class MusicPlayer {
     }
 
     public void load(File audioFile, int volume) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
-        //final CountDownLatch playingFinished = new CountDownLatch(1);
+        final CountDownLatch playingFinished = new CountDownLatch(1);
         AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
         clip = AudioSystem.getClip();
         clip.open(audioStream);
@@ -308,7 +309,7 @@ class MusicPlayer {
                 }
                 else {
                     playing = false;
-                   //MusicPlayerForm.updateIcons();
+                   player.updateIcons();
                 }
 
 
@@ -362,5 +363,8 @@ class MusicPlayer {
         if (clip != null && clip.isRunning()) {
             clip.setMicrosecondPosition(targetTime);
         }
+    }
+    public static void getMyMusicPlayerForm(MusicPlayerForm form){
+        player = form;
     }
 }
