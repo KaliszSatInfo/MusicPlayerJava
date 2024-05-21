@@ -24,13 +24,14 @@ public class MusicPlayerForm extends JFrame {
     private JButton leftButton;
     private JLabel songTitle;
     private JButton loopButton;
+    private boolean triggered = true;
     private JMenuBar mBar = new JMenuBar();
     private JMenuItem menu0 = new JMenuItem("Add folder");
     private JMenuItem menu1 = new JMenuItem("Delete all");
     private DefaultTableModel tableModel;
     private MusicPlayer player = new MusicPlayer();
     private JCheckBox loop = new JCheckBox();
-    private int index;
+
     private List<MySong> avalSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
@@ -42,6 +43,7 @@ public class MusicPlayerForm extends JFrame {
         mBar.add(menu0);
         mBar.add(menu1);
         startProgressUpdate();
+        songTable.getTableHeader().setReorderingAllowed(false);
 
         menu0.addActionListener(e -> fileschooser());
         menu1.addActionListener(e -> clearTable());
@@ -80,6 +82,19 @@ public class MusicPlayerForm extends JFrame {
         });
 
         songTable.getSelectionModel().addListSelectionListener(e -> {
+            /*if(!e.getValueIsAdjusting()){
+                String selectedData = null;
+
+                int selectedRow = songTable.getSelectedRow();
+                int selectedColumns = songTable.getSelectedColumn();
+
+                for (int i = 0; i <= selectedRow; i++) {
+                    for (int j = 0; j <= selectedColumns; j++) {
+                        selectedData = (String) songTable.getValueAt(selectedRow, selectedColumns);
+                    }
+                }*/
+
+            System.out.println("listener was triggered");
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
                 String filename = getFilePathFromSong((String) tableModel.getValueAt(selectedRow, 0), avalSongs);
@@ -88,9 +103,11 @@ public class MusicPlayerForm extends JFrame {
                     player.stop();
                     int volume = volumeSlider.getValue();
                     player.load(selectedFile, volume);
+                    songTitle.setText(removeExtension(String.valueOf(tableModel.getValueAt(selectedRow, 0))));
                     player.play();
                     songLenght.setText(secToMin(MusicPlayer.getClipSize()));
                     playStopButton.setText("❚❚");
+
                     timeSlider.setMaximum(MusicPlayer.getClipSize());
                     timeSlider.setPaintTicks(false);
                     timeSlider.setPaintLabels(false);
@@ -98,9 +115,10 @@ public class MusicPlayerForm extends JFrame {
                     timeSlider.setMinorTickSpacing(0);
                     timeSlider.setSnapToTicks(false);
                 } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
-                    ex.printStackTrace();
-                }
-            }
+                    ex.getLocalizedMessage();
+
+            }}
+
         });
 
         tableModel = new DefaultTableModel(new String[]{"File Name"}, 0);
@@ -227,47 +245,54 @@ public class MusicPlayerForm extends JFrame {
     }
 
     public void fleshedOutPlay(String sCase){
-        try {
-            player.stop();
+
+            triggered = false;
+            player.cancel();
             switch(sCase) {
                 case "right":
-                    songTable.changeSelection(0, songTable.getSelectedRow()+1, false, false);
+                    System.out.println("current row is "+songTable.getSelectedRow());
+                    songTable.changeSelection(songTable.getSelectedRow()+1, 0, false, false);
                 case "left":
-                    songTable.changeSelection(0, songTable.getSelectedRow()-1, false, false);
+                    songTable.changeSelection(songTable.getSelectedRow()-1, 0, false, false);
                 case "max":
-                    songTable.changeSelection(0, avalSongs.size(), false, false);
+                    songTable.changeSelection(avalSongs.size(), 0, false, false);
                 case "min":
                     songTable.changeSelection(0, 0, false, false);
             }
-            player.load(new File(getFilePathFromSong((String) tableModel.getValueAt(songTable.getSelectedRow(), 0), avalSongs)), volumeSlider.getValue());
-            songTitle.setText(removeExtension(String.valueOf(tableModel.getValueAt(songTable.getSelectedRow(), 0))));
-            player.play();
-            System.out.println("began song " + index );
-            playStopButton.setText("❚❚");
-
-        } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
+            //player.load(new File(getFilePathFromSong((String) tableModel.getValueAt(songTable.getSelectedRow(), 0), avalSongs)), volumeSlider.getValue());
+            //songTitle.setText(removeExtension(String.valueOf(tableModel.getValueAt(songTable.getSelectedRow(), 0))));
+         /*catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
             JOptionPane.showMessageDialog(this, "Indexing problem in list of songs");
-        }
+        }*/
     }
     public void moveForward(boolean right) {
         int index = songTable.getSelectedRow();
-        if (right){
-            if (index < songTable.getColumnCount())
-                System.out.println("smaller than max");
-            fleshedOutPlay("right");
-        } else if (index==songTable.getColumnCount()) {
-            fleshedOutPlay("min");
-        }
+        int rowCount = songTable.getRowCount();
+        System.out.println("index is " + index);
+        System.out.println("row count is " + rowCount);
 
-        else {
-            if (index>0){
-                System.out.println("bigger than min");
+        if (right) {
+            if (index < rowCount - 1) {
+
+                fleshedOutPlay("right");
+            } else {
+
+                fleshedOutPlay("min");
+            }
+        } else {
+            if (index > 0) {
+
                 fleshedOutPlay("left");
-            } else if (index == 0) {
+            } else {
+
                 fleshedOutPlay("max");
             }
         }
+
+
+
     }
+
 
     private void clearTable() {
         avalSongs.clear();
@@ -313,11 +338,12 @@ class MusicPlayer {
             if (!clip.isRunning()) {
                 if (event.getType() == LineEvent.Type.STOP) {
                     if (toLoop) {
+                        System.out.println("End of song triggered");
                         clip.setMicrosecondPosition(0);
                         clip.start();
                     } else {
                         playing = false;
-                        clip.setMicrosecondPosition(0);
+                        clip.setMicrosecondPosition(1);
                         player.updateIcons();
                     }
                 }
@@ -338,6 +364,12 @@ class MusicPlayer {
     public void stop() {
         if (clip != null) {
             pausedTime = clip.getMicrosecondPosition();
+            clip.stop();
+            playing = false;
+        }
+    }
+    public void cancel(){
+        if(clip != null){
             clip.stop();
             playing = false;
         }
