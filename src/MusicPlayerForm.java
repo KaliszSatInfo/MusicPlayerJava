@@ -30,8 +30,6 @@ public class MusicPlayerForm extends JFrame {
     private JMenuItem menu1 = new JMenuItem("Delete all");
     private DefaultTableModel tableModel;
     private MusicPlayer player = new MusicPlayer();
-    private JCheckBox loop = new JCheckBox();
-
     private List<MySong> avalSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
@@ -44,10 +42,8 @@ public class MusicPlayerForm extends JFrame {
         mBar.add(menu1);
         startProgressUpdate();
         songTable.getTableHeader().setReorderingAllowed(false);
-
         menu0.addActionListener(e -> fileschooser());
         menu1.addActionListener(e -> clearTable());
-
         loopButton.setForeground(Color.LIGHT_GRAY);
         loopButton.addActionListener(e -> {
             if (!player.isToLoop()) {
@@ -60,7 +56,6 @@ public class MusicPlayerForm extends JFrame {
         });
         rightButton.addActionListener(e -> moveForward(true));
         leftButton.addActionListener(e -> moveForward(false));
-
         playStopButton.addActionListener(e -> updateIcons());
         addWindowListener(new WindowAdapter() {
             @Override
@@ -68,32 +63,17 @@ public class MusicPlayerForm extends JFrame {
                 writeToMemory();
             }
         });
-
         volumeSlider.addChangeListener(e -> {
             int volume = volumeSlider.getValue();
             if (MusicPlayer.isPlaying()) player.setVolume(volume);
         });
-
         timeSlider.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 player.setProgress(timeSlider.getValue() * 1000000L);
             }
         });
-
         songTable.getSelectionModel().addListSelectionListener(e -> {
-            /*if(!e.getValueIsAdjusting()){
-                String selectedData = null;
-
-                int selectedRow = songTable.getSelectedRow();
-                int selectedColumns = songTable.getSelectedColumn();
-
-                for (int i = 0; i <= selectedRow; i++) {
-                    for (int j = 0; j <= selectedColumns; j++) {
-                        selectedData = (String) songTable.getValueAt(selectedRow, selectedColumns);
-                    }
-                }*/
-
             System.out.println("listener was triggered");
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
@@ -107,7 +87,6 @@ public class MusicPlayerForm extends JFrame {
                     player.play();
                     songLenght.setText(secToMin(MusicPlayer.getClipSize()));
                     playStopButton.setText("❚❚");
-
                     timeSlider.setMaximum(MusicPlayer.getClipSize());
                     timeSlider.setPaintTicks(false);
                     timeSlider.setPaintLabels(false);
@@ -115,15 +94,11 @@ public class MusicPlayerForm extends JFrame {
                     timeSlider.setMinorTickSpacing(0);
                     timeSlider.setSnapToTicks(false);
                 } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
-                    ex.getLocalizedMessage();
-
+                    ex.getStackTrace();
             }}
-
         });
-
         tableModel = new DefaultTableModel(new String[]{"File Name"}, 0);
         songTable.setModel(tableModel);
-
         readMemory();
         updateTable(avalSongs);
     }
@@ -200,7 +175,7 @@ public class MusicPlayerForm extends JFrame {
         Thread progressUpdater = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.onSpinWait();
+                    Thread.sleep(1000);
                     if (MusicPlayer.isPlaying()) {
                         long progress = player.getProgress();
                         currTime.setText(secToMin(player.getProgress()));
@@ -247,7 +222,7 @@ public class MusicPlayerForm extends JFrame {
     public void fleshedOutPlay(String sCase){
 
             triggered = false;
-            player.cancel();
+            player.stop();
             switch(sCase) {
                 case "right":
                     System.out.println("current row is "+songTable.getSelectedRow());
@@ -259,40 +234,27 @@ public class MusicPlayerForm extends JFrame {
                 case "min":
                     songTable.changeSelection(0, 0, false, false);
             }
-            //player.load(new File(getFilePathFromSong((String) tableModel.getValueAt(songTable.getSelectedRow(), 0), avalSongs)), volumeSlider.getValue());
-            //songTitle.setText(removeExtension(String.valueOf(tableModel.getValueAt(songTable.getSelectedRow(), 0))));
-         /*catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
-            JOptionPane.showMessageDialog(this, "Indexing problem in list of songs");
-        }*/
+
     }
     public void moveForward(boolean right) {
         int index = songTable.getSelectedRow();
         int rowCount = songTable.getRowCount();
         System.out.println("index is " + index);
         System.out.println("row count is " + rowCount);
-
         if (right) {
             if (index < rowCount - 1) {
-
                 fleshedOutPlay("right");
             } else {
-
                 fleshedOutPlay("min");
             }
         } else {
             if (index > 0) {
-
                 fleshedOutPlay("left");
             } else {
-
                 fleshedOutPlay("max");
             }
         }
-
-
-
     }
-
 
     private void clearTable() {
         avalSongs.clear();
@@ -343,7 +305,7 @@ class MusicPlayer {
                         clip.start();
                     } else {
                         playing = false;
-                        clip.setMicrosecondPosition(1);
+                        clip.setMicrosecondPosition(0);
                         player.updateIcons();
                     }
                 }
@@ -352,10 +314,12 @@ class MusicPlayer {
         volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
         setVolume(volume);
         clipSize = (long) (audioStream.getFrameLength() / audioStream.getFormat().getFrameRate());
+        pausedTime = 0;
     }
 
     public void play() {
         if (clip != null) {
+            clip.setMicrosecondPosition(pausedTime);
             clip.start();
             playing = true;
         }
@@ -368,12 +332,7 @@ class MusicPlayer {
             playing = false;
         }
     }
-    public void cancel(){
-        if(clip != null){
-            clip.stop();
-            playing = false;
-        }
-    }
+
 
     public static boolean isPlaying() {
         return playing;
@@ -399,6 +358,9 @@ class MusicPlayer {
     public void setProgress(long targetTime) {
         if (clip != null && clip.isRunning()) {
             clip.setMicrosecondPosition(targetTime);
+            if (!playing){
+                pausedTime = targetTime;
+            }
         }
     }
 }
