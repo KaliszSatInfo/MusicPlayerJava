@@ -30,6 +30,7 @@ public class MusicPlayerForm extends JFrame {
     private DefaultTableModel tableModel;
     private MusicPlayer player = new MusicPlayer();
     private JCheckBox loop = new JCheckBox();
+    private int index;
     private List<MySong> avalSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
@@ -55,6 +56,8 @@ public class MusicPlayerForm extends JFrame {
                 loopButton.setForeground(Color.LIGHT_GRAY);
             }
         });
+        rightButton.addActionListener(e -> moveForward(true));
+        leftButton.addActionListener(e -> moveForward(false));
 
         playStopButton.addActionListener(e -> updateIcons());
         addWindowListener(new WindowAdapter() {
@@ -216,6 +219,53 @@ public class MusicPlayerForm extends JFrame {
         tableModel.setRowCount(0);
         for (MySong datum : data) {
             tableModel.addRow(new Object[]{datum.getName()});
+        }
+    }
+    public String removeExtension(String file){
+        int lastDotIndex = file.lastIndexOf(".");
+        return file.substring(0, lastDotIndex);
+    }
+
+    public void fleshedOutPlay(String sCase){
+        try {
+            player.stop();
+            switch(sCase) {
+                case "right":
+                    songTable.changeSelection(0, songTable.getSelectedRow()+1, false, false);
+                case "left":
+                    songTable.changeSelection(0, songTable.getSelectedRow()-1, false, false);
+                case "max":
+                    songTable.changeSelection(0, avalSongs.size(), false, false);
+                case "min":
+                    songTable.changeSelection(0, 0, false, false);
+            }
+            player.load(new File(getFilePathFromSong((String) tableModel.getValueAt(songTable.getSelectedRow(), 0), avalSongs)), volumeSlider.getValue());
+            songTitle.setText(removeExtension(String.valueOf(tableModel.getValueAt(songTable.getSelectedRow(), 0))));
+            player.play();
+            System.out.println("began song " + index );
+            playStopButton.setText("❚❚");
+
+        } catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
+            JOptionPane.showMessageDialog(this, "Indexing problem in list of songs");
+        }
+    }
+    public void moveForward(boolean right) {
+        int index = songTable.getSelectedRow();
+        if (right){
+            if (index < songTable.getColumnCount())
+                System.out.println("smaller than max");
+            fleshedOutPlay("right");
+        } else if (index==songTable.getColumnCount()) {
+            fleshedOutPlay("min");
+        }
+
+        else {
+            if (index>0){
+                System.out.println("bigger than min");
+                fleshedOutPlay("left");
+            } else if (index == 0) {
+                fleshedOutPlay("max");
+            }
         }
     }
 
