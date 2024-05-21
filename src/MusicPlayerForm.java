@@ -30,7 +30,6 @@ public class MusicPlayerForm extends JFrame {
     private DefaultTableModel tableModel;
     private MusicPlayer player = new MusicPlayer();
     private JCheckBox loop = new JCheckBox();
-    private boolean isAdjustingSlider;
     private List<MySong> avalSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
@@ -180,8 +179,8 @@ public class MusicPlayerForm extends JFrame {
         Thread progressUpdater = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(1000);
-                    if (!isAdjustingSlider && MusicPlayer.isPlaying()) {
+                    Thread.onSpinWait();
+                    if (MusicPlayer.isPlaying()) {
                         long progress = player.getProgress();
                         currTime.setText(secToMin(player.getProgress()));
                         if (timeSlider.getValue() != progress) {
