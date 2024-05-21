@@ -10,7 +10,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.CountDownLatch;
 
 public class MusicPlayerForm extends JFrame {
     private JButton playStopButton;
@@ -19,18 +18,17 @@ public class MusicPlayerForm extends JFrame {
     private JTable songTable;
     private JSlider timeSlider;
     private JLabel currTime;
-    private JLabel songLenght;
+    private JLabel songLength;
     private JButton rightButton;
     private JButton leftButton;
     private JLabel songTitle;
     private JButton loopButton;
-    private boolean triggered = true;
     private JMenuBar mBar = new JMenuBar();
     private JMenuItem menu0 = new JMenuItem("Add folder");
     private JMenuItem menu1 = new JMenuItem("Delete all");
     private DefaultTableModel tableModel;
     private MusicPlayer player = new MusicPlayer();
-    private List<MySong> avalSongs = new ArrayList<>();
+    private final List<MySong> availableSongs = new ArrayList<>();
 
     public MusicPlayerForm() {
         setContentPane(panel);
@@ -42,7 +40,7 @@ public class MusicPlayerForm extends JFrame {
         mBar.add(menu1);
         startProgressUpdate();
         songTable.getTableHeader().setReorderingAllowed(false);
-        menu0.addActionListener(e -> fileschooser());
+        menu0.addActionListener(e -> filesChooser());
         menu1.addActionListener(e -> clearTable());
         loopButton.setForeground(Color.LIGHT_GRAY);
         loopButton.addActionListener(e -> {
@@ -77,7 +75,7 @@ public class MusicPlayerForm extends JFrame {
             System.out.println("listener was triggered");
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
-                String filename = getFilePathFromSong((String) tableModel.getValueAt(selectedRow, 0), avalSongs);
+                String filename = getFilePathFromSong((String) tableModel.getValueAt(selectedRow, 0), availableSongs);
                 File selectedFile = new File(filename);
                 try {
                     player.stop();
@@ -85,7 +83,7 @@ public class MusicPlayerForm extends JFrame {
                     player.load(selectedFile, volume);
                     songTitle.setText(removeExtension(String.valueOf(tableModel.getValueAt(selectedRow, 0))));
                     player.play();
-                    songLenght.setText(secToMin(MusicPlayer.getClipSize()));
+                    songLength.setText(secToMin(MusicPlayer.getClipSize()));
                     playStopButton.setText("❚❚");
                     timeSlider.setMaximum(MusicPlayer.getClipSize());
                     timeSlider.setPaintTicks(false);
@@ -100,7 +98,7 @@ public class MusicPlayerForm extends JFrame {
         tableModel = new DefaultTableModel(new String[]{"File Name"}, 0);
         songTable.setModel(tableModel);
         readMemory();
-        updateTable(avalSongs);
+        updateTable(availableSongs);
     }
 
     public void updateIcons() {
@@ -123,9 +121,9 @@ public class MusicPlayerForm extends JFrame {
     }
 
     public void writeToMemory() {
-        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("songinfo")))) {
+        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("Song-info")))) {
             writer.print("");
-            for (MySong songs : avalSongs) {
+            for (MySong songs : availableSongs) {
                 writer.println(songs.getPath() + ";" + songs.getName() + ";" + songs.getPlaylistID());
             }
         } catch (IOException e) {
@@ -134,14 +132,14 @@ public class MusicPlayerForm extends JFrame {
     }
 
     public void readMemory() {
-        try (Scanner sc = new Scanner(new BufferedReader(new FileReader("songinfo")))) {
+        try (Scanner sc = new Scanner(new BufferedReader(new FileReader("Song-info")))) {
             while (sc.hasNextLine()) {
                 String line = sc.nextLine();
-                String[] bloky = line.split(";");
-                String path = bloky[0];
-                String name = bloky[1];
-                int playlistID = Integer.parseInt(bloky[2]);
-                avalSongs.add(new MySong(path, name, playlistID));
+                String[] blocks = line.split(";");
+                String path = blocks[0];
+                String name = blocks[1];
+                int playlistID = Integer.parseInt(blocks[2]);
+                availableSongs.add(new MySong(path, name, playlistID));
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -154,14 +152,14 @@ public class MusicPlayerForm extends JFrame {
         if (files != null) {
             for (File file : files) {
                 if (isPlayable(file)) {
-                    avalSongs.add(new MySong(String.valueOf(file), stripPrefix(String.valueOf(file)), 1));
+                    availableSongs.add(new MySong(String.valueOf(file), stripPrefix(String.valueOf(file)), 1));
                 }
             }
-            SwingUtilities.invokeLater(() -> updateTable(avalSongs));
+            SwingUtilities.invokeLater(() -> updateTable(availableSongs));
         }
     }
 
-    public void fileschooser() {
+    public void filesChooser() {
         JFileChooser fc = new JFileChooser(".");
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -220,8 +218,6 @@ public class MusicPlayerForm extends JFrame {
     }
 
     public void fleshedOutPlay(String sCase){
-
-            triggered = false;
             player.stop();
             switch(sCase) {
                 case "right":
@@ -230,7 +226,7 @@ public class MusicPlayerForm extends JFrame {
                 case "left":
                     songTable.changeSelection(songTable.getSelectedRow()-1, 0, false, false);
                 case "max":
-                    songTable.changeSelection(avalSongs.size(), 0, false, false);
+                    songTable.changeSelection(availableSongs.size(), 0, false, false);
                 case "min":
                     songTable.changeSelection(0, 0, false, false);
             }
@@ -257,8 +253,8 @@ public class MusicPlayerForm extends JFrame {
     }
 
     private void clearTable() {
-        avalSongs.clear();
-        updateTable(avalSongs);
+        availableSongs.clear();
+        updateTable(availableSongs);
     }
 
     public static String secToMin(long totalSeconds) {
@@ -280,8 +276,6 @@ class MusicPlayer {
     private static long clipSize;
     private long pausedTime;
     private boolean toLoop;
-    private CountDownLatch syncLatch = new CountDownLatch(1);
-    private static MusicPlayerForm player;
 
     public boolean isToLoop() {
         return toLoop;
@@ -292,7 +286,6 @@ class MusicPlayer {
     }
 
     public void load(File audioFile, int volume) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
-        final CountDownLatch playingFinished = new CountDownLatch(1);
         AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile);
         clip = AudioSystem.getClip();
         clip.open(audioStream);
@@ -306,7 +299,6 @@ class MusicPlayer {
                     } else {
                         playing = false;
                         clip.setMicrosecondPosition(0);
-                        player.updateIcons();
                     }
                 }
             }
