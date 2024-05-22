@@ -261,8 +261,22 @@ public class MusicPlayerForm extends JFrame {
     }
 
     private void clearTable() {
-        availableSongs.clear();
-        updateTable(availableSongs);
+        int response = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure?",
+                "Confirm",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        // Process the user's response
+        if (response == JOptionPane.YES_OPTION) {
+            availableSongs.clear();
+            updateTable(availableSongs);
+        } else if (response == JOptionPane.NO_OPTION) {
+
+        }
+
     }
 
     public static String secToMin(long totalSeconds) {
