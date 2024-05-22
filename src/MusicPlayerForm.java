@@ -112,7 +112,7 @@ public class MusicPlayerForm extends JFrame {
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("Song-info")))) {
             writer.print("");
             for (MySong songs : availableSongs) {
-                writer.println(songs.getPath() + ";" + songs.getName() + ";" + songs.getPlaylistID());
+                writer.println(songs.getPath() + ";" + songs.getName());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -126,8 +126,7 @@ public class MusicPlayerForm extends JFrame {
                 String[] blocks = line.split(";");
                 String path = blocks[0];
                 String name = blocks[1];
-                int playlistID = Integer.parseInt(blocks[2]);
-                availableSongs.add(new MySong(path, name, playlistID));
+                availableSongs.add(new MySong(path, name));
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -140,7 +139,7 @@ public class MusicPlayerForm extends JFrame {
         if (files != null) {
             for (File file : files) {
                 if (isPlayable(file)) {
-                    availableSongs.add(new MySong(String.valueOf(file), stripPrefix(String.valueOf(file)), 1));
+                    availableSongs.add(new MySong(String.valueOf(file), stripPrefix(String.valueOf(file))));
                 }
             }
             SwingUtilities.invokeLater(() -> updateTable(availableSongs));
@@ -380,12 +379,10 @@ class MusicPlayer {
 class MySong {
     private String path;
     private String name;
-    private int playlistID;
 
-    public MySong(String path, String name, int playlistID) {
+    public MySong(String path, String name) {
         this.path = path;
         this.name = name;
-        this.playlistID = playlistID;
     }
 
     public String getPath() {
@@ -394,10 +391,6 @@ class MySong {
 
     public String getName() {
         return name;
-    }
-
-    public int getPlaylistID() {
-        return playlistID;
     }
 }
 
