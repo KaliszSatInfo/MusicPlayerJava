@@ -140,7 +140,7 @@ public class MusicPlayerForm extends JFrame {
         if (files != null) {
             for (File file : files) {
                 if (isPlayable(file)) {
-                    availableSongs.add(new MySong(file.getAbsolutePath(), file.getName(), 1));
+                    availableSongs.add(new MySong(file.getAbsolutePath(), file.getName()));
                 }
             }
             SwingUtilities.invokeLater(() -> updateTable(availableSongs));
@@ -165,7 +165,7 @@ public class MusicPlayerForm extends JFrame {
                     if (MusicPlayer.isPlaying()) {
                         long progress = player.getProgress();
                         SwingUtilities.invokeLater(() -> {
-                            currTime.setText(secToMin(progress));
+                            currTime.setText(secToMin(timeSlider.getValue()));
                             timeSlider.setValue((int) progress);
                         });
                     }
