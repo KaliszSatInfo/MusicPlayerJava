@@ -269,7 +269,6 @@ public class MusicPlayerForm extends JFrame {
                 JOptionPane.QUESTION_MESSAGE
         );
 
-        // Process the user's response
         if (response == JOptionPane.YES_OPTION) {
             availableSongs.clear();
             updateTable(availableSongs);
@@ -315,7 +314,6 @@ class MusicPlayer {
             if (!clip.isRunning()) {
                 if (event.getType() == LineEvent.Type.STOP) {
                     if (toLoop) {
-                        System.out.println("End of song triggered");
                         clip.setMicrosecondPosition(0);
                         clip.start();
                     } else {
