@@ -23,9 +23,9 @@ public class MusicPlayerForm extends JFrame {
     private JButton leftButton;
     private JLabel songTitle;
     private JButton loopButton;
+    private boolean isLive = false;
     private JMenuBar mBar = new JMenuBar();
     private JMenuItem menu0 = new JMenuItem("Add folder");
-    private JMenuItem menu1 = new JMenuItem("Delete all");
     private DefaultTableModel tableModel;
     private MusicPlayer player = new MusicPlayer();
     private final List<MySong> availableSongs = new ArrayList<>();
@@ -37,6 +37,7 @@ public class MusicPlayerForm extends JFrame {
         setTitle("Music Player");
         setJMenuBar(mBar);
         mBar.add(menu0);
+        JMenuItem menu1 = new JMenuItem("Delete all");
         mBar.add(menu1);
         startProgressUpdate();
         songTable.getTableHeader().setReorderingAllowed(false);
@@ -72,28 +73,11 @@ public class MusicPlayerForm extends JFrame {
             }
         });
         songTable.getSelectionModel().addListSelectionListener(e -> {
-            System.out.println("listener was triggered");
             int selectedRow = songTable.getSelectedRow();
             if (selectedRow != -1) {
-                String filename = getFilePathFromSong((String) tableModel.getValueAt(selectedRow, 0), availableSongs);
-                File selectedFile = new File(filename);
-                try {
-                    player.stop();
-                    int volume = volumeSlider.getValue();
-                    player.load(selectedFile, volume);
-                    songTitle.setText(removeExtension(String.valueOf(tableModel.getValueAt(selectedRow, 0))));
-                    player.play();
-                    songLength.setText(secToMin(MusicPlayer.getClipSize()));
-                    playStopButton.setText("❚❚");
-                    timeSlider.setMaximum(MusicPlayer.getClipSize());
-                    timeSlider.setPaintTicks(false);
-                    timeSlider.setPaintLabels(false);
-                    timeSlider.setMajorTickSpacing(0);
-                    timeSlider.setMinorTickSpacing(0);
-                    timeSlider.setSnapToTicks(false);
-                } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
-                    ex.getStackTrace();
-            }}
+                stopCurrentSong();
+                playSongAt(selectedRow);
+            }
         });
         tableModel = new DefaultTableModel(new String[]{"File Name"}, 0);
         songTable.setModel(tableModel);
@@ -102,13 +86,17 @@ public class MusicPlayerForm extends JFrame {
     }
 
     public void updateIcons() {
+        if (isLive){
+
+
         if (MusicPlayer.isPlaying()) {
             player.stop();
             playStopButton.setText("►");
         } else {
             player.play();
             playStopButton.setText("❚❚");
-        }
+        }}
+        else JOptionPane.showMessageDialog(this, "Please select a song to play first");
     }
 
     public String getFilePathFromSong(String name, List<MySong> list) {
@@ -173,7 +161,7 @@ public class MusicPlayerForm extends JFrame {
         Thread progressUpdater = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.onSpinWait();
                     if (MusicPlayer.isPlaying()) {
                         long progress = player.getProgress();
                         currTime.setText(secToMin(player.getProgress()));
@@ -217,38 +205,58 @@ public class MusicPlayerForm extends JFrame {
         return file.substring(0, lastDotIndex);
     }
 
-    public void fleshedOutPlay(String sCase){
-            player.stop();
-            switch(sCase) {
-                case "right":
-                    System.out.println("current row is "+songTable.getSelectedRow());
-                    songTable.changeSelection(songTable.getSelectedRow()+1, 0, false, false);
-                case "left":
-                    songTable.changeSelection(songTable.getSelectedRow()-1, 0, false, false);
-                case "max":
-                    songTable.changeSelection(availableSongs.size(), 0, false, false);
-                case "min":
-                    songTable.changeSelection(0, 0, false, false);
+    private void playSongAt(int index) {
+        if (index >= 0 && index < availableSongs.size()) {
+            isLive = true;
+            String filename = getFilePathFromSong((String) tableModel.getValueAt(index, 0), availableSongs);
+            File selectedFile = new File(filename);
+            try {
+                int volume = volumeSlider.getValue();
+                player.load(selectedFile, volume);
+                songLength.setText(secToMin(MusicPlayer.getClipSize()));
+                timeSlider.setMaximum(MusicPlayer.getClipSize());
+                timeSlider.setPaintTicks(false);
+                timeSlider.setPaintLabels(false);
+                timeSlider.setMajorTickSpacing(0);
+                timeSlider.setMinorTickSpacing(0);
+                timeSlider.setSnapToTicks(false);
+                songTable.setRowSelectionInterval(index, index);
+                songTitle.setText(removeExtension((String) tableModel.getValueAt(index, 0)));
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException ex) {
+                ex.getLocalizedMessage();
+                return;
             }
-
+            playStopButton.setText("❚❚");
+            player.play();
+        }
     }
+
     public void moveForward(boolean right) {
-        int index = songTable.getSelectedRow();
+        int selectedRow = songTable.getSelectedRow();
         int rowCount = songTable.getRowCount();
-        System.out.println("index is " + index);
-        System.out.println("row count is " + rowCount);
+        if (selectedRow != -1) {
+
         if (right) {
-            if (index < rowCount - 1) {
-                fleshedOutPlay("right");
+            stopCurrentSong();
+            if (selectedRow < rowCount - 1) {
+                playSongAt(selectedRow + 1);
             } else {
-                fleshedOutPlay("min");
+                playSongAt(0);
             }
         } else {
-            if (index > 0) {
-                fleshedOutPlay("left");
-            } else {
-                fleshedOutPlay("max");
+            if (selectedRow > 0) {
+                stopCurrentSong();
+                playSongAt(selectedRow-1);
+            } else if(selectedRow==0) {
+                stopCurrentSong();
+                playSongAt(rowCount);
             }
+        }}
+    }
+    private void stopCurrentSong() {
+        if (MusicPlayer.isPlaying()) {
+            player.stop();
+            playStopButton.setText("►");
         }
     }
 
@@ -380,3 +388,4 @@ class MySong {
         return playlistID;
     }
 }
+
