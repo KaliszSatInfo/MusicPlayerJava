@@ -12,8 +12,8 @@ Vývojářské prostředí: `IntelliJ IDEA 2023.3.6. (Community Edition); Build 
 
 1. Naklonujte projekt do IntelliJ
 2. Spusťte metodu `main` ve třídě `MusicPlayerForm`
-3. Skrz `Add folder` v menu můžete přidat zdroje ze kterých má aplikace čerpat soubory
-4. Jednoduchým kliknutím na položku v tabulce se zpustí hudba a s tou se dá pomocí, tlačítek a sliderů ve spodní polovině manipulovat (stopnout, zrušit stopnutí, upravit hlasitost, nebo posunout)
+3. Skrz `Add folder` v menu můžete přidat zdroje ze kterých má aplikace čerpat soubory, druhým tlačítkem `Delte all`se tento seznam dá smazat
+4. Jednoduchým kliknutím na položku v tabulce se zpustí hudba a s tou se dá pomocí, tlačítek a sliderů ve spodní polovině manipulovat (stopnout, znova zpustit, upravit hlasitost, posunout se ve skladbě, nebo přepínat skladby tlačítky doleva a doprava)
 
 ## Obecný přehled a popis aplikace
 
