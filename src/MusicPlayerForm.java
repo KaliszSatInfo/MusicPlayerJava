@@ -104,7 +104,7 @@ public class MusicPlayerForm extends JFrame {
     public void writeToMemory() {
         try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("Song-info")))) {
             for (MySong song : availableSongs) {
-                writer.println(song.path() + ";" + song.name() + ";" + song.playlistID());
+                writer.println(song.path() + ";" + song.name());
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error writing to Song-info file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -124,8 +124,7 @@ public class MusicPlayerForm extends JFrame {
                 if (blocks.length == 3) {
                     String path = blocks[0];
                     String name = blocks[1];
-                    int playlistID = Integer.parseInt(blocks[2]);
-                    availableSongs.add(new MySong(path, name, playlistID));
+                    availableSongs.add(new MySong(path, name));
                 }
             }
         } catch (FileNotFoundException e) {
@@ -219,7 +218,6 @@ public class MusicPlayerForm extends JFrame {
                 JOptionPane.QUESTION_MESSAGE
         );
 
-        // Process the user's response
         if (response == JOptionPane.YES_OPTION) {
             availableSongs.clear();
             updateTable(availableSongs);
@@ -364,5 +362,5 @@ class MusicPlayer {
     }
 }
 
-record MySong(String path, String name, int playlistID) {
+record MySong(String path, String name) {
 }
